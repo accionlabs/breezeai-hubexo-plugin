@@ -92,13 +92,13 @@ Confirm: "Project linked successfully."
 With `projectUuid` in hand, check what the project already contains
 so the user knows where to go next.
 
-1. Call `Call_Get_Project_Details_` (or `Get_complete_functional_graph`
-   via the Breeze MCP) to see what's already indexed.
-2. Report the state plainly:
+1. Call `Call_Get_Project_Details_` to see what's already indexed.
+   Do **not** call `Get_complete_functional_graph` here — it pulls
+   the entire graph and is far too heavy for a status check.
+2. Report the state plainly from the project details response:
 
    - **Code ontology:** present or missing
-   - **Functional graph:** populated (persona/outcome/scenario counts)
-     or empty
+   - **Functional graph:** populated or empty
    - **Design graph:** present or missing (if applicable)
 
 **Do NOT attempt to upload anything from this skill.** Just report
