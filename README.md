@@ -9,7 +9,7 @@ A Claude Code plugin that integrates with the Breeze AI platform for functional 
 In Claude Code, run:
 
 ```
-/plugin marketplace add accionlabs/breezeai-claude-plugin
+/plugin marketplace add accionlabs/breezeai-hubexo-plugin
 ```
 
 This registers the marketplace but does **not** install the plugin yet.
@@ -49,6 +49,7 @@ You can confirm everything loaded by running:
 ```
 
 This walks you through:
+
 - Setting up your API key (generated at https://ai.accionbreeze.com/mcp/generate/key)
 - Linking to an existing project or creating a new one
 - Checking ontology status
@@ -71,31 +72,31 @@ Then **restart Claude Code** again so the updated skills/hooks/MCP definitions a
 
 ### Setup
 
-| Skill | Command | Description |
-|-------|---------|-------------|
-| **Setup Project** | `/breeze:setup-project` | Initialize the Breeze workspace — API key, project link, ontology status check, next-step guidance. Does **not** upload repos or documents. |
+| Skill                  | Command                                  | Description                                                                                                                                                                                                                                                           |
+| ---------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Setup Project**      | `/breeze:setup-project`                  | Initialize the Breeze workspace — API key, project link, ontology status check, next-step guidance. Does **not** upload repos or documents.                                                                                                                           |
 | **Onboard Repository** | `/breeze:onboard-repository [repo-path]` | Upload a source repository into the Breeze code graph. Wraps `breeze-code-ontology-generator` with `--capture-statements`, verifies Node.js 22+, and resolves the target repo from an argument or the current directory. Run once per repo (frontend + each backend). |
 
 ### Search & analysis
 
-| Skill | Command | Description |
-|-------|---------|-------------|
-| **Search** | `/breeze:search <query>` | Search the functional graph or code graph for feature discovery, impact analysis, and cross-cutting queries |
-| **Impact Analysis** | `/breeze:impact-analysis` | Deep analysis across functional, design, and code graphs — summarizes cross-layer impact and optionally generates a detailed analysis document with Mermaid diagrams |
-| **Analyze Functional** | `/breeze:analyze-functional` | Analyze a requirement against the existing functional graph — coverage gaps, conflicts, dependencies, impact |
-| **Analyze Architecture** | `/breeze:analyze-architecture` | Analyze a requirement against the architecture graph — impacted layers and components across 8 architecture layers |
-| **Analyze Design** | `/breeze:analyze-design <Figma URL>` | Analyze UI/UX designs from Figma frames — functional summary, components, mapping to the functional graph, gap flags |
+| Skill                    | Command                              | Description                                                                                                                                                          |
+| ------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Search**               | `/breeze:search <query>`             | Search the functional graph or code graph for feature discovery, impact analysis, and cross-cutting queries                                                          |
+| **Impact Analysis**      | `/breeze:impact-analysis`            | Deep analysis across functional, design, and code graphs — summarizes cross-layer impact and optionally generates a detailed analysis document with Mermaid diagrams |
+| **Analyze Functional**   | `/breeze:analyze-functional`         | Analyze a requirement against the existing functional graph — coverage gaps, conflicts, dependencies, impact                                                         |
+| **Analyze Architecture** | `/breeze:analyze-architecture`       | Analyze a requirement against the architecture graph — impacted layers and components across 8 architecture layers                                                   |
+| **Analyze Design**       | `/breeze:analyze-design <Figma URL>` | Analyze UI/UX designs from Figma frames — functional summary, components, mapping to the functional graph, gap flags                                                 |
 
 ### Generate from designs
 
-| Skill | Command | Description |
-|-------|---------|-------------|
+| Skill              | Command                  | Description                                                                                                                                                |
+| ------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Visual to Text** | `/breeze:visual-to-text` | Generate user stories from UI design visuals (Figma frames, PDF screens, images) — outputs structured stories in persona/outcome/scenario/step/action form |
 
 ### Spec generation
 
-| Skill | Command | Description |
-|-------|---------|-------------|
+| Skill             | Command                 | Description                                                           |
+| ----------------- | ----------------------- | --------------------------------------------------------------------- |
 | **Generate Spec** | `/breeze:generate-spec` | Generate functional specification documents from the functional graph |
 
 ### Recommended pipelines
