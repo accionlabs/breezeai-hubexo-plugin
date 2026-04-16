@@ -24,7 +24,7 @@ argument-hint: "[ui-repo-path]"
 ## Guard
 
 Read `.breeze.json`. If missing, tell user to run `/breeze:setup-project`.
-Extract `apiKey` and `projectUuid`.
+Extract `projectUuid`. The Breeze MCP is authenticated separately — if a tool call fails with an auth error, tell the user to re-run `/breeze:setup-project` to re-authenticate.
 
 ### Resolve UI repo (optional but strongly preferred)
 
@@ -826,7 +826,6 @@ TEMPLATE already exists (reused), omit it from the payload.
 ```
 Bulk_Update_Design_Nodes(
   uuid: <projectUuid>,
-  apiKey: <apiKey>,
   data: <nested payload>
 )
 ```
@@ -846,7 +845,6 @@ and report them at the end in Step 7.
 ```
 Update_Functional_Node(
   uuid: <projectUuid>,
-  apiKey: <apiKey>,
   label: "Scenario",
   id: <scenario UUID>,
   data: { "isDesignGenerated": true }

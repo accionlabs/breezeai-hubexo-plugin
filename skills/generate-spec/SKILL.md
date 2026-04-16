@@ -10,7 +10,7 @@ description: >
 ## Guard
 
 Read `.breeze.json`. If missing or incomplete, tell the user to run `/breeze:setup-project`.
-Extract `apiKey` and `projectUuid`.
+Extract `projectUuid`. The Breeze MCP is authenticated separately — if a tool call fails with an auth error, tell the user to re-run `/breeze:setup-project` to re-authenticate.
 
 ---
 

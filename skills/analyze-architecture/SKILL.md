@@ -6,7 +6,7 @@ description: Analyze a requirement (from Jira, document, image, diagram, or text
 ## Guard
 
 Read `.breeze.json`. If missing, tell the user to run `/breeze:setup-project`.
-Extract `apiKey` and `projectUuid`. Verify the project exists via `Call_Get_Project_Details_`.
+Extract `projectUuid`. Verify the project exists via `Call_Get_Project_Details_`. The Breeze MCP is authenticated separately — if a tool call fails with an auth error, tell the user to re-run `/breeze:setup-project` to re-authenticate.
 
 ## Invocation
 

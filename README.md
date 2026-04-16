@@ -50,12 +50,11 @@ You can confirm everything loaded by running:
 
 This walks you through:
 
-- Setting up your API key (generated at https://ai.accionbreeze.com/mcp/generate/key)
+- Authenticating with the Breeze MCP (browser-based sign-in; no API key to paste)
 - Linking to an existing project or creating a new one
 - Checking ontology status
-- Optionally uploading your repository or documents
 
-Your credentials are saved to `.breeze.json` in the project root (gitignored).
+The linked `projectUuid` is saved to `.breeze.json` in the project root (gitignored). The MCP session is authenticated separately — no credentials are stored on disk.
 
 ### Updating the plugin
 
@@ -74,8 +73,7 @@ Then **restart Claude Code** again so the updated skills/hooks/MCP definitions a
 
 | Skill                  | Command                                  | Description                                                                                                                                                                                                                                                           |
 | ---------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Setup Project**      | `/breeze:setup-project`                  | Initialize the Breeze workspace — API key, project link, ontology status check, next-step guidance. Does **not** upload repos or documents.                                                                                                                           |
-| **Onboard Repository** | `/breeze:onboard-repository [repo-path]` | Upload a source repository into the Breeze code graph. Wraps `breeze-code-ontology-generator` with `--capture-statements`, verifies Node.js 22+, and resolves the target repo from an argument or the current directory. Run once per repo (frontend + each backend). |
+| **Setup Project** | `/breeze:setup-project` | Initialize the Breeze workspace — MCP authentication, project link, ontology status check, next-step guidance. Does **not** upload repos or documents. |
 
 ### Search & analysis
 
@@ -102,13 +100,9 @@ Then **restart Claude Code** again so the updated skills/hooks/MCP definitions a
 ### Recommended pipelines
 
 ```
-First-time onboarding of a brownfield full-stack project:
-  /breeze:setup-project                               # API key + project link
-  /breeze:onboard-repository <frontend repo>          # index code graph (once per repo)
-  /breeze:onboard-repository <backend repo 1>
-  /breeze:onboard-repository <backend repo 2>
-  ...
-  /breeze:generate-spec
+First-time setup:
+  /breeze:setup-project                               # MCP auth + project link
+  /breeze:generate-spec                               # if the project already has a graph
 
 Greenfield project (no code yet):
   /breeze:setup-project
@@ -149,6 +143,6 @@ claude --plugin-dir ../breeze-claude-plugin
 
 ## Notes
 
-- `.breeze.json` contains your API key — add it to `.gitignore`
+- `.breeze.json` holds only the linked `projectUuid`. It is gitignored by default. The Breeze MCP is authenticated separately via a browser sign-in flow — no API key or secret is stored on disk.
 - The **Design** skill requires a Figma MCP server to be configured separately
-- All skills except `setup-project` require a valid `.breeze.json` with `apiKey` and `projectUuid`
+- All skills except `setup-project` require a valid `.breeze.json` with a `projectUuid` and an authenticated Breeze MCP session. If a Breeze tool call fails with an auth error, re-run `/breeze:setup-project`.
