@@ -4,10 +4,9 @@ description: >
   Initialize or validate the Breeze workspace. Guides MCP
   authentication, links to a Breeze project, saves the projectUuid
   to .breeze.json, and checks ontology readiness. Does NOT upload
-  repos or documents — use /breeze:analyze-functional or
-  /breeze:visual-to-text for document and design ingestion. Use
-  when: first time setup, "init breeze", "setup breeze", or when
-  any Breeze tool fails with authentication errors.
+  repos or documents. Use when: first time setup, "init breeze",
+  "setup breeze", or when any Breeze tool fails with authentication
+  errors.
 ---
 
 ## Scope
@@ -20,16 +19,7 @@ This skill is responsible for **workspace bootstrap only**:
 - Pointing the user at the right next-step skill based on what they
   want to do
 
-This skill does **NOT** upload repositories or documents. That
-responsibility lives in dedicated skills:
-
-| You want to… | Use this skill instead |
-|---|---|
-| Ingest a PDF / markdown / text document | `/breeze:analyze-functional` (handles document input as part of the analysis flow) |
-| Convert a UI design visual into user stories | `/breeze:visual-to-text` |
-
-If the user asks for any of those during setup, finish the bootstrap
-steps first and then point them at the right skill in Step 4.
+This skill does **NOT** upload repositories or documents.
 
 ## Prerequisites
 
@@ -108,18 +98,6 @@ what's there.
 
 Based on Step 3's findings, point the user at the right follow-up.
 
-### Greenfield project (no code yet)
-
-If the user is starting from designs or documents:
-
-> To seed Breeze without code:
->
-> - **UI designs** → use `/breeze:visual-to-text` to convert Figma
->   frames / PDFs / screenshots into structured user stories.
-> - **Requirement documents** → use `/breeze:analyze-functional`,
->   which ingests documents as part of its analysis flow and can
->   upsert the extracted intent into the functional graph.
-
 ### Existing project with a populated graph
 
 If the graph is already populated:
@@ -127,23 +105,8 @@ If the graph is already populated:
 > Your project is ready. You can:
 >
 > - `/breeze:search` to explore the graph
-> - `/breeze:analyze-functional` to analyze a new requirement
-> - `/breeze:analyze-architecture` to check architecture impact
-> - `/breeze:analyze-design` to generate design graph nodes
+> - `/breeze:impact-analysis` to run cross-layer impact analysis
 > - `/breeze:generate-spec` to export a functional specification
 
-## What this skill does NOT do
-
-- **Upload or ingest documents** — use `/breeze:analyze-functional`
-- **Convert visuals to user stories** — use `/breeze:visual-to-text`
-
 Setup is intentionally narrow: authenticate the MCP, link the
-project, tell the user where to go next. Every other responsibility
-lives in its own skill.
-
-## See also
-
-- `/breeze:analyze-functional` — analyze requirements (including from
-  documents) against the graph
-- `/breeze:visual-to-text` — convert UI design visuals into user
-  stories
+project, tell the user where to go next.

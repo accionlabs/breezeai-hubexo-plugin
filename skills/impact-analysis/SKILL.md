@@ -75,7 +75,7 @@ Intersect the functional + code results with the Architecture Graph to identify 
    - **Capacity / scaling pressure** — if the prompt implies a traffic-shape change (new filter, heavier query, fanout), which nodes absorb that pressure first.
    - **Reuse opportunities** — if a proposed change implies new cross-cutting capability (auth, notifications, search) but an existing Platform Service already provides it, call that out so the user doesn't build a duplicate.
 
-   This step's output is a set of operational consequences for nodes that exist in the graph. If an ontology-hygiene limitation surfaces along the way, route the user to `/breeze:analyze-architecture` in a single trailing line and keep the focus on the impact picture.
+   This step's output is a set of operational consequences for nodes that exist in the graph. Keep the focus on the impact picture.
 
 ## Step 3 — Classify Prompt Intent
 
@@ -167,8 +167,8 @@ Emit both an explanatory section (from A) and a change/impact section (from B), 
 
 Notes on the Architecture Context block:
 - Include a layer line only when at least one node in that layer is touched by the prompt. The block is a roster of what the prompt exercises.
-- If the Architecture Graph is not populated, replace the whole block with a single line: `Architecture Context: Not available — architecture graph is not populated for this project. Run /breeze:analyze-architecture to baseline.`
-- Mark each node with `✓` (exists, touched), `✗` (removed / failing in this scenario), `~` (modified), or `+` (new, proposed) — the same convention used in the analyze-architecture write-back format.
+- If the Architecture Graph is not populated, replace the whole block with a single line: `Architecture Context: Not available — architecture graph is not populated for this project.`
+- Mark each node with `✓` (exists, touched), `✗` (removed / failing in this scenario), `~` (modified), or `+` (new, proposed).
 - Each `Impact on touched nodes` bullet (Template B only) names a specific touched node and describes an operational consequence — failure behavior, load characteristic, coordination requirement, or data-flow role — that the user's prompt produces for that node.
 
 IMPORTANT: After presenting this summary, explicitly ask the user:
@@ -181,7 +181,7 @@ IMPORTANT: After presenting this summary, explicitly ask the user:
 - The summary should be informative but concise — the detailed doc comes later if requested.
 - If functional, design, AND code searches all return no results, report "No relevant context found in any graph" and skip the doc offer — even if the architecture graph is populated, there's nothing to anchor it to.
 - Do not modify or interfere with the user's original prompt — your job is analysis only.
-- Architecture analysis is read-only. This skill never mutates the Architecture Graph — for that, direct the user to `/breeze:analyze-architecture`.
+- Architecture analysis is read-only. This skill never mutates the Architecture Graph.
 - Architecture analysis is **impact-on-deployed-system**, not ontology audit. Frame every architecture observation as "what does the user's prompt mean for this node?" — not "what is missing from the graph?".
 - **HARD RULE — never surface graph-hygiene gaps to the user.** This is output shown to non-Breeze readers who may misread coverage shortfalls as product defects. Do NOT include (in the summary, the detailed doc, or any user-visible line):
   - "empty scenario arrays", "unanchored", "orphan scenario", "graph-hygiene gap", "fully unanchored"

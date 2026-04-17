@@ -81,15 +81,6 @@ Then **restart Claude Code** again so the updated skills/hooks/MCP definitions a
 | ------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Search**               | `/breeze:search <query>`             | Search the functional graph or code graph for feature discovery, impact analysis, and cross-cutting queries                                                          |
 | **Impact Analysis**      | `/breeze:impact-analysis`            | Deep analysis across functional, design, and code graphs — summarizes cross-layer impact and optionally generates a detailed analysis document with Mermaid diagrams |
-| **Analyze Functional**   | `/breeze:analyze-functional`         | Analyze a requirement against the existing functional graph — coverage gaps, conflicts, dependencies, impact                                                         |
-| **Analyze Architecture** | `/breeze:analyze-architecture`       | Analyze a requirement against the architecture graph — impacted layers and components across 8 architecture layers                                                   |
-| **Analyze Design**       | `/breeze:analyze-design <Figma URL>` | Analyze UI/UX designs from Figma frames — functional summary, components, mapping to the functional graph, gap flags                                                 |
-
-### Generate from designs
-
-| Skill              | Command                  | Description                                                                                                                                                |
-| ------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Visual to Text** | `/breeze:visual-to-text` | Generate user stories from UI design visuals (Figma frames, PDF screens, images) — outputs structured stories in persona/outcome/scenario/step/action form |
 
 ### Spec generation
 
@@ -104,16 +95,9 @@ First-time setup:
   /breeze:setup-project                               # MCP auth + project link
   /breeze:generate-spec                               # if the project already has a graph
 
-Greenfield project (no code yet):
-  /breeze:setup-project
-  /breeze:visual-to-text           # Figma / PDF / images → user stories
-  /breeze:analyze-functional       # also ingests requirement documents
-
 Adding a new requirement to an existing project:
   /breeze:impact-analysis
-  /breeze:analyze-functional
-  /breeze:analyze-architecture
-  /breeze:analyze-design <Figma URL>
+  /breeze:search <query>
 ```
 
 ## Auto-Loading (No Flag Needed)
