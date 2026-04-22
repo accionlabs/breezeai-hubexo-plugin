@@ -79,7 +79,7 @@ Then **restart Claude Code** again so the updated skills/hooks/MCP definitions a
 
 | Skill                    | Command                              | Description                                                                                                                                                          |
 | ------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Search**               | `/breeze:search <query>`             | Search the functional graph or code graph for feature discovery, impact analysis, and cross-cutting queries                                                          |
+| **Search**               | `/breeze:search <query>`             | Smart-search across functional, design, code, and architecture graphs — routes to one or many based on query intent. Default entry point for any question about the project. |
 | **Impact Analysis**      | `/breeze:impact-analysis`            | Deep analysis across functional, design, and code graphs — summarizes cross-layer impact and optionally generates a detailed analysis document with Mermaid diagrams |
 
 ### Spec generation

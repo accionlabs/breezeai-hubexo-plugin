@@ -1,7 +1,7 @@
 {
   "name": "breeze",
-  "version": "0.0.3",
-  "description": "Breeze AI — functional graph, code graph, and design analysis skills",
+  "version": "0.1.0",
+  "description": "Breeze AI — functional, design, code, and architecture graph skills",
   "author": {
     "name": "Accion Breeze"
   },
