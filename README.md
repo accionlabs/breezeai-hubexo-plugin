@@ -20,7 +20,7 @@ This registers the marketplace but does **not** install the plugin yet.
 /plugin install breeze
 ```
 
-Pick `breeze` from the list when prompted. Claude Code downloads the plugin into your local plugin directory.
+Claude Code downloads the plugin into your local plugin directory.
 
 ### 3. Activate the plugin
 
@@ -61,7 +61,7 @@ The linked `projectUuid` is saved to `.breeze.json` in the project root (gitigno
 When a new version is released:
 
 ```
-/plugin marketplace update accionlabs/breezeai-claude-plugin
+/plugin marketplace update accionlabs/breezeai-hubexo-plugin
 /plugin update breeze
 ```
 
@@ -106,7 +106,7 @@ To avoid passing `--plugin-dir` every time, add this to your project's `.claude/
 
 ```json
 {
-  "plugins": ["./breeze-claude-plugin"]
+  "plugins": ["./breezeai-hubexo-plugin"]
 }
 ```
 
@@ -114,19 +114,18 @@ To avoid passing `--plugin-dir` every time, add this to your project's `.claude/
 
 ### Option A: Plugin inside your project repo
 
-Place the `breeze-claude-plugin/` folder in your project repo. Everyone who clones the repo has it.
+Place the `breezeai-hubexo-plugin/` folder in your project repo. Everyone who clones the repo has it.
 
 ### Option B: Separate shared repo
 
 Clone the plugin repo alongside your project:
 
 ```bash
-git clone git@github.com:accionlabs/breeze-claude-plugin.git
-claude --plugin-dir ../breeze-claude-plugin
+git clone git@github.com:accionlabs/breezeai-hubexo-plugin.git
+claude --plugin-dir ../breezeai-hubexo-plugin
 ```
 
 ## Notes
 
 - `.breeze.json` holds only the linked `projectUuid`. It is gitignored by default. The Breeze MCP is authenticated separately via a browser sign-in flow — no API key or secret is stored on disk.
-- The **Design** skill requires a Figma MCP server to be configured separately
 - All skills except `setup-project` require a valid `.breeze.json` with a `projectUuid` and an authenticated Breeze MCP session. If a Breeze tool call fails with an auth error, re-run `/breeze:setup-project`.
