@@ -7,10 +7,9 @@ description: >
   "create specification", "export functional graph".
 ---
 
-## Guard
+## Project
 
-Read `.breeze.json`. If missing or incomplete, tell the user to run `/breeze:setup-project`.
-Extract `projectUuid`. The Breeze MCP is authenticated separately — if a tool call fails with an auth error, tell the user to re-run `/breeze:setup-project` to re-authenticate.
+This skill needs a `projectUuid` — follow CLAUDE.md's project-resolution rules (`--project` override → `.breeze.json` fallback → announce active project header). Auth handling on Breeze MCP failures is also covered in CLAUDE.md.
 
 ---
 

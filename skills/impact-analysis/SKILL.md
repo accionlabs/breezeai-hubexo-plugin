@@ -16,9 +16,9 @@ Perform deep analysis of a user prompt across the Breeze functional, design, cod
 
 Given a user prompt, search all four Breeze graphs, perform a deep analysis, present a summary, and — if the user wants — generate a comprehensive document with diagrams.
 
-## Step 1 — Read Project Config
+## Step 1 — Project
 
-Read `.breeze.json` to get the `projectUuid`. If it doesn't exist, respond with: "No Breeze project configured. Skipping analysis."
+This skill needs a `projectUuid` — see CLAUDE.md for resolution rules (`--project <uuid|name>` override or `.breeze.json` fallback).
 
 ## Step 2 — Read All Four Graphs (in parallel)
 

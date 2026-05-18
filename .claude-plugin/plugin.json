@@ -1,7 +1,7 @@
 {
   "name": "breeze",
-  "version": "0.2.0",
-  "description": "Breeze AI — functional, design, code, and architecture graph skills",
+  "version": "0.4.0",
+  "description": "Breeze AI — functional, design, code, and architecture graph skills plus DDL/schema-side impact analysis via MCP",
   "author": {
     "name": "Accion Breeze"
   },
