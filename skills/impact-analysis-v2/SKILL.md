@@ -29,8 +29,8 @@ Follow CLAUDE.md's project-resolution rules (per-invocation override via `--proj
 
 The user may pass `--detailed` (or `--full` / `--report`, or natural phrasing like "give me the full report", "detailed report", "skip the summary") anywhere in `$ARGUMENTS`. Treat this as a one-shot output mode override:
 
-- **SUMMARY mode (default, no flag)** → run all steps as written. Step 4 emits the summary template, then asks the user whether to generate the detailed document.
-- **DETAILED mode (flag present)** → run all steps as written, but in Step 4 **skip the summary template entirely** and emit the detailed document **directly into the conversation output (not to a file)**. The detailed report must appear inline in the response so it can be (a) read by the user, and (b) consumed as the return value when this skill is invoked from another skill or agent via `/breeze:impact-analysis-v2 --detailed ...`. Strip `--detailed` (and any synonyms) from `$ARGUMENTS` before processing the prompt.
+- **SUMMARY mode (default, no flag)** → run all steps as written. Step 4 emits the summary template **inline in the conversation**, then asks the user whether to generate the detailed document.
+- **DETAILED mode (flag present)** → run all steps as written, but in Step 4 **skip the summary template entirely** and **save the detailed document to a Markdown file** in the current working directory, following the Detailed-mode output template defined in Step 4. After writing, print a short confirmation block inline (file path + verdict + risk level + 3–5 headline findings) so the user / calling skill sees the takeaways without opening the file. Filename convention: `impact-analysis-<short-kebab-slug-derived-from-prompt>.md` (e.g. `impact-analysis-saved-search-email-frequency.md`); fall back to `impact-analysis-<YYYY-MM-DD>.md` if no usable slug can be derived. Use the Write tool. Strip `--detailed` (and any synonyms) from `$ARGUMENTS` before processing the prompt.
 
 Do not produce both a summary and a detailed document in the same invocation.
 
@@ -63,13 +63,13 @@ If a search returns no results, note "No matches found" for that graph. If the A
 
 Based on the Functional_Graph_Search results, drill deeper into the functional graph:
 
-1. ALWAYS call `Get_all_personas` first to get the full persona list with their IDs.
+1. ALWAYS call `Get_all_personas` first to get the full persona list with their IDs. Cache the response — you will need each persona's `name` AND `type` (if present) when rendering the Functional Layer section of the detailed report, which groups by persona with type-aware glyphs (`👤` human / `🤖` system / `☁️` external).
 2. For outcomes/scenarios returned by the search, match the `personaId` field in each outcome back to the persona list to identify which personas are affected.
 3. Call `Get_all_outcomes_for_a_persona_id` for each affected persona to get their full outcome list.
 4. Call `Get_all_scenarios_for_a_outcome_id` for each relevant outcome.
 5. For each relevant scenario, call `Get_all_steps_actions_for_a_scenario_id` to get the complete steps and actions.
 
-This gives you the full functional chain: Persona → Outcome → Scenario → Steps → Actions.
+This gives you the full functional chain: Persona → Outcome → Scenario → Step → Action. Steps are first-class members of the chain — do not collapse them into their parent scenario at render time.
 
 ## Step 2.2 — Architecture Impact
 
@@ -215,7 +215,7 @@ Synthesize results from all four graphs into a deep analysis. Think across layer
 
 ## Step 4 — Return Analysis Summary
 
-**If DETAILED mode was set in Step 1b, skip this template entirely** and emit the detailed document directly **into the conversation output** (described in the last bullet of the Rules section). Do not also produce the summary. Do NOT write the report to a file unless the user explicitly asks for a file path (e.g. "save it to docs/impact.md"). The default is always inline output, so parent skills and agents can consume this skill's return value directly.
+**If DETAILED mode was set in Step 1b, skip this summary template entirely** and produce the detailed document instead, following the **Detailed-mode output template** defined immediately after this summary template. In DETAILED mode the document is written to a Markdown file in the current working directory (per Step 1b's filename convention) — the conversation response is a short confirmation block, NOT the full report. Do not also produce the summary. If the user explicitly specifies a file path (e.g. "save it to docs/impact.md"), honour that path instead of the default convention.
 
 Otherwise emit the summary using the single template below.
 
@@ -304,12 +304,309 @@ IMPORTANT: After presenting this summary, explicitly ask the user:
 
 "Would you like me to generate a detailed analysis document with diagrams for this? (yes/no)"
 
+---
+
+### Detailed-mode output template
+
+Use this skeleton verbatim for headings, table column names, section ordering, and Mermaid `classDef` declarations. Substitute every `<placeholder>` slot with content derived from the analysis. Section ordering is FIXED — do not reorder. Conditional sections (marked) are included only when their trigger applies.
+
+In DETAILED mode this entire document is written to a Markdown file (per Step 1b's filename convention) using the Write tool. After writing, print a short confirmation to the conversation containing: the absolute file path, the Verdict (from the Data Layer section if present, otherwise the Risk Level), and 3–5 headline findings as bullets — NOT the full document.
+
+````
+# Breeze Impact Analysis
+**Project:** <name> (`<uuid>`)
+
+**Legend:** `+ new` · `~ modified` · `✓ existing/touched` · `✗ removed`
+
+---
+
+## Executive Summary
+
+<paragraph 1: what the change is + total surface area in one sentence>
+<paragraph 2: most material discovery or constraint surfaced during analysis>
+<paragraph 3: headline operational risk OR cross-cutting consideration>
+<paragraph 4 (optional): blast-radius quantification + verdict>
+
+---
+
+## Functional Layer (touched nodes)
+
+#### <glyph> <Persona Name> *(<persona-type label>)*
+
+| Marker | Type | Name | Notes |
+|---|---|---|---|
+| <marker> | Outcome | <Outcome name> (`<id>`) | <one-line notes> |
+| <marker> | Scenario | <Scenario name> (`<id>`) | <one-line notes> |
+| <marker> | Step | <Step name> (`<id>`) | <one-line notes> |
+| <marker> | Action | <Action name> (`<id>`) | <one-line notes> |
+
+#### <glyph> <next persona> *(<type>)*
+
+| Marker | Type | Name | Notes |
+|---|---|---|---|
+...
+
+*(One `####` subsection per touched persona. Persona type, glyph, ordering, and Step-row rules per the Per-layer tables spec above. No row duplication across personas.)*
+
+---
+
+## Design Layer (touched nodes)
+
+| Marker | Type | Name | Notes |
+|---|---|---|---|
+| <marker> | UserJourney | <name> (`<id>`) | <notes> |
+| <marker> | Flow | <name> (`<id>`) | <notes> |
+| <marker> | Page | <name> (`<id>`) | <notes> |
+| <marker> | Component | <name> (`<id>`) | <notes> |
+
+---
+
+## Code Layer (touched files)
+
+| Marker | Repo | File | Endpoint / Page | Current | Adds |
+|---|---|---|---|---|---|
+| <marker> | <repo> | <path:line> | <route or page> | <current behavior> | <new behavior> |
+
+---
+
+## Architecture Layer (touched nodes)
+
+| Marker | Layer | Node | Touched because… |
+|---|---|---|---|
+| <marker> | UserExperience | <node name> (`<id>`) | <one-line reason> |
+| <marker> | ApiGateway | <node name> (`<id>`) | <one-line reason> |
+| <marker> | Services | <node name> (`<id>`) | <one-line reason> |
+| <marker> | Agents | <node name> (`<id>`) | <one-line reason> |
+| <marker> | EventQueue | <node name> (`<id>`) | <one-line reason> |
+| <marker> | DataLake | <node name> (`<id>`) | <one-line reason> |
+| <marker> | ObservabilityMonitoring | <node name> (`<id>`) | <one-line reason> |
+| <marker> | Infrastructure | <node name> (`<id>`) | <one-line reason> |
+
+*(Silently omit layer rows with no touched nodes — never print "Agents: empty" or similar. HARD RULE.)*
+
+---
+
+## Data Layer (Schema-Side)
+
+*(Conditional — include only when Step 2.4 Stage 1 returned ≥3 hits. One block per touched DataLake. Ordering: 🚨 Blocking → ● V2-writable → ✓ Confirmed → skip Tangential entirely.)*
+
+### <tier-marker> `<DataLake name>` — <tier label> *(patterns: `<pattern1>`, `<pattern2>`)*
+
+**Tables touched:** <list>
+
+**DDL operations:**
+
+| # | Op | Object | Statement | Migration file | Reversible | Ship in |
+|---|---|---|---|---|---|---|
+| <n> | <ADD/DROP/ALTER/...> | <schema.table.col> | <SQL statement or summary> | <migration path or "—"> | ✓/✗ | <release/window> |
+
+**Dependents (from Stage 3 cross-reference scan):**
+
+| Type | Name | Schema | Risk to operation # | Action |
+|---|---|---|---|---|
+| <FK/View/MV/Trigger/Procedure> | <object name or "—"> | <schema> | #<n> or "—" | <action or "None found"> |
+
+*(Repeat block per touched DataLake.)*
+
+**Verdict callout:**
+
+> <🔴 BLOCKING / 🟡 V2 WORK / 🟢 NO DDL> — <one-to-two sentence justification>
+
+---
+
+## Request-Path Diagram
+
+```mermaid
+flowchart LR
+    <nodes and edges showing user → edge → gateway → service → storage>
+
+    classDef changed fill:#fff4b8,stroke:#b8860b,color:#000
+    classDef unchanged fill:#e8f4ff,stroke:#3a78a8,color:#000
+    classDef storage fill:#e8ffe8,stroke:#2e8b57,color:#000
+    class <changed-nodes> changed
+    class <unchanged-nodes> unchanged
+    class <storage-nodes> storage
+```
+
+## Async-Tail Diagram
+
+```mermaid
+flowchart TD
+    <nodes and edges showing upstream → queue/CDC/worker → destination, including external sinks>
+
+    classDef new fill:#fff4b8,stroke:#b8860b,color:#000
+    classDef unchanged fill:#e8f4ff,stroke:#3a78a8,color:#000
+    classDef storage fill:#e8ffe8,stroke:#2e8b57,color:#000
+    class <new-nodes> new
+    class <unchanged-nodes> unchanged
+    class <storage-nodes> storage
+```
+
+*(Omit the Async-Tail diagram when the change has no async tail — purely synchronous request/response feature.)*
+
+---
+
+## Cross-Layer Traceability Matrix
+
+| Scenario | Functional | Design | Code | Architecture |
+|---|---|---|---|---|
+| <scenario name> | <outcome/scenario ref> | <UJ/Flow/Page/Component ref> | <repo:path> | <touched arch nodes> |
+
+*(One row per scenario covered by the change. Reuse scenario list from the Functional Layer section.)*
+
+---
+
+## Single Points of Failure for this Flow
+
+1. **<node name>** — failure mode → user-visible effect → mitigation in this design. <one paragraph>
+2. ...
+
+*(Only nodes whose failure breaks THIS flow. Not generic platform SPOFs.)*
+
+---
+
+## Risk Taxonomy
+
+### <n>. <Risk title> — <LOW/MEDIUM/HIGH> likelihood × <LOW/MEDIUM/HIGH> consequence
+**Why:** <one paragraph explaining the mechanism>
+**Worst case:** <one sentence>
+**Mitigation:**
+1. <concrete action>
+2. <concrete action>
+3. <concrete action>
+
+*(3–7 risks total. Each MUST use the Why / Worst case / Mitigation triple — no flat risk paragraphs.)*
+
+---
+
+## QA Test Plan
+
+| # | Test | Expected |
+|---|---|---|
+| 1 | <concrete test with concrete inputs> | <concrete expected output> |
+| 2 | ... | ... |
+
+*(6–12 cases. Include regression-guard cases and edge cases (special characters, pagination boundaries, large payloads).)*
+
+---
+
+## Operational Considerations
+
+- **New log groups / dashboards:** <names>
+- **New alarms:** <names + thresholds where known>
+- **Capacity test plan:** <what to measure + on what env>
+- **Rollback path (clean):** <ordered steps>
+- **Rollback path (dirty):** <what's lost, what's recoverable>
+- **Alarm channel:** <existing SNS / Slack / etc.>
+
+---
+
+## Out of Scope
+
+- <bullet 1>
+- <bullet 2>
+- ...
+
+*(Explicit pre-emption of scope creep. Often as valuable as the in-scope analysis.)*
+
+---
+
+## Open Questions
+
+1. **<topic>** — <specific question with implementation impact>
+2. ...
+
+*(3–6 questions. Must have concrete implementation consequence — not generic "have you considered" prompts.)*
+
+---
+
+## Implementation Options
+
+*(Conditional — include only when 2+ viable paths exist. Omit when there's only one sensible approach.)*
+
+### Option A: <name> (recommended)
+<one-paragraph description>
+- **Pros:** <bullets>
+- **Cons:** <bullets>
+- **Cost:** <time estimate + infra cost>
+- **Risk:** <Low/Medium/High>
+
+### Option B: <name>
+<as above>
+
+**Recommendation: Option <X>.** <one-paragraph reasoning>
+
+---
+
+## Multi-Service Deploy Coordination
+
+*(Conditional — include whenever >1 service or repo must redeploy.)*
+
+Required deploy order:
+
+1. **`<repo>`** — <what to ship> → <how to verify before next step>
+2. **`<repo>`** — <what to ship> → <how to verify>
+...
+
+<Note on backwards-compatibility windows; per-step rollback path.>
+
+---
+
+## Staged-rollout Plumbing
+
+*(Conditional — include only when the prompt implies a feature flag or cohort rollout.)*
+
+- **Flag storage:** <env var / GrowthBook / LaunchDarkly / DB row>
+- **Gate location in code:** <repo:path>
+- **Kill-switch behavior:** <fail-safe direction>
+- **Rollout stages:** Stage 0 (internal) → Stage 1 (design partners) → Stage 2 (X% public) → ...
+
+---
+
+## Suggested Ticket Slicing
+
+*(Conditional — include for non-trivial changes.)*
+
+- **<ID>** — <scope>. <deps or "no deps">
+- **<ID> → <dep>** — <scope>.
+...
+
+*(Use IDs with explicit dependencies. One line per ticket.)*
+
+---
+
+## Cross-checks vs the prompt
+
+*(Conditional — include ONLY when the user's prompt contains a stated analysis, count, or assertion the skill can validate or dispute.)*
+
+- ✅ <claim from prompt the analysis confirmed> — <one line>
+- ⚠️ <claim from prompt the analysis disputes / extends> — <one line explaining the delta>
+````
+
+After writing the file, the inline confirmation block printed to the conversation should look like:
+
+```
+Detailed impact-analysis written to: <absolute path>
+
+Verdict: <🔴 BLOCKING / 🟡 V2 WORK / 🟢 NO DDL or Risk: <Low/Medium/High>>
+
+Headline findings:
+- <finding 1>
+- <finding 2>
+- <finding 3>
+- <finding 4 (optional)>
+- <finding 5 (optional)>
+```
+
 ## Rules
 
 - Always read all four graphs, even if the prompt seems to only affect one area. Functional / Design / Code are semantic searches; Architecture is per-label enumeration via 8 parallel `Get_Architecture_Nodes_By_Label` calls (one per architecture label).
 - The summary should be informative but concise — the detailed doc comes later if requested (or directly in DETAILED mode).
 - **DETAILED mode (Step 1b):** when the user passes `--detailed` (or a synonym), Step 4 skips the summary template and emits the detailed document directly. Never produce both a summary and a detailed document in the same invocation.
-- **Output target — always conversation, never a file (unless explicitly requested):** both the SUMMARY template (Step 4) and the DETAILED document are emitted inline as the response. Do NOT use the Write tool or any file-creation path to save the report. The only exception is an explicit user instruction with a file path (e.g. *"save the detailed report to `docs/impact-2026-05-18.md`"* or *"write it to `/tmp/x.md`"*). Default = inline conversation output, every time. This is critical because this skill may be invoked from another skill or agent via `/breeze:impact-analysis-v2 --detailed ...` — the parent expects v2's response to BE the report, not a path to a file the parent then has to read back.
+- **Output target — mode-dependent:**
+   - **SUMMARY mode** → emit inline in the conversation. Never write to a file in SUMMARY mode.
+   - **DETAILED mode** → write the full report to a Markdown file in the current working directory using the Write tool, following Step 1b's filename convention (`impact-analysis-<short-kebab-slug>.md` or `impact-analysis-<YYYY-MM-DD>.md` fallback). The inline conversation response is a short confirmation block (path + verdict + 3–5 headline findings), NOT the full document. If the user gives an explicit file path in the prompt (e.g. *"save it to `docs/impact-2026-05-18.md`"*), honour that path verbatim instead of the default convention.
+   - This mode-dependent split is deliberate: parent skills calling `/breeze:impact-analysis-v2 --detailed ...` must Read the produced file to consume the full report. The inline confirmation tells the caller where to look.
 - **Project targeting (Step 1a + CLAUDE.md):** project resolution follows CLAUDE.md's rules (`--project <uuid|name>` override → `.breeze.json` fallback). Step 1a adds a skill-specific natural-language hint form. Do not mutate `.breeze.json`.
 - If functional, design, AND code searches all return no results, report "No relevant context found in any graph" and skip the doc offer — even if the architecture graph is populated, there's nothing to anchor it to.
 - Do not modify or interfere with the user's original prompt — your job is analysis only.
@@ -336,7 +633,19 @@ IMPORTANT: After presenting this summary, explicitly ask the user:
   1. **Executive Summary** — 2–4 paragraphs naming the change, the surface area, and the headline risk.
 
   2. **Per-layer touched-nodes tables — one per ontology, markers on every row.** All five ontologies get the same marker treatment in the detailed doc (this differs from the SUMMARY template above, which marks only Architecture nodes):
-     - *Functional Layer table* — columns: `Marker | Type (Outcome/Scenario/Action) | Name | Notes`
+     - *Functional Layer — one section per persona, NOT a single flat table.* The functional graph hierarchy is **Persona → Outcome → Scenario → Step → Action** — render the persona axis as the top-level grouping so the reader can scan by who-is-affected. Rules:
+        * **One markdown subsection (`####` heading) per persona that has ≥1 touched node.** Heading format: `<glyph> <Persona Name> <em>(<persona-type label>)</em>`.
+        * **Persona-type lookup is graph-driven, NOT text-heuristic.** Every persona returned by `Get_all_personas` (cached in Step 2.1) carries the information you need. Resolve the type in this order:
+           1. **Persona `type` field** if present on the persona record — use it verbatim.
+           2. Otherwise the persona's **`name` field** — Breeze functional graphs include dedicated, canonically-named personas for non-human actors. The two canonical names to recognise are:
+              - `System` (case-insensitive exact match) — internal background actor
+              - `External System` (case-insensitive exact match) — third-party / external service
+           3. Anything else → treat as a human persona.
+        * **Glyph by type:** 👤 human · 🤖 System · ☁️ External System. Never invent a persona name; never guess from outcome wording. If the affected node's parent Outcome's `personaId` maps to a persona record named `System`, the heading is literally `🤖 System (system persona)` — not `🤖 Alert Dispatcher` or any other invented label.
+        * **Section ordering:** human personas first (PMs / UX readers care most), then system personas, then external-system personas. Within each type bucket, order by number of touched rows descending (most-impacted persona first).
+        * **Inside each persona section, render a table with columns:** `Marker | Type (Outcome/Scenario/Step/Action) | Name | Notes`. **Step rows are mandatory** — do NOT skip the Step layer. Order rows by hierarchy: each Outcome immediately followed by its Scenarios, each Scenario by its Steps, each Step by its Actions. This makes the chain visually scannable inside one table without nested tables.
+        * **A single node appears under exactly one persona section** — its parent Outcome's persona. Do not duplicate rows across personas even if a Scenario is conceptually relevant to multiple personas; pick the owning Outcome's persona.
+        * **Persona-name resolution:** the `Get_all_personas` call in Step 2.1 returns the ID→name map. Walk every non-Outcome row (Scenario/Step/Action) up to its parent Outcome to find its persona. If the chain breaks (e.g., orphan Action with no resolvable Outcome), put the row under a final `❓ Unattributed` section — do NOT silently drop it.
      - *Design Layer table* — columns: `Marker | Type (Page/Component/UserJourney/Flow) | Name | Notes`
      - *Code Layer table* — columns: `Marker | Repo | File | Endpoint / Page | Current | Adds` (same shape as the summary's Code Context table, plus the marker column up front — see Step 4 for column meanings)
      - *Architecture Layer table* — columns: `Marker | Layer | Node | Touched because…`
