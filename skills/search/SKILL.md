@@ -102,7 +102,7 @@ If the query doesn't fit a single-graph fast-path, pick the layers it implies an
 
 **Shape-based routing:**
 - "how does X work" / "explain Y" / "what happens when…" / "walk me through Z" → **Functional + Code** minimum (add Design if UI-facing, add Architecture if deployment-facing, add DDL labels if data-flow involves specific tables)
-- "what is the impact of…" / "what breaks if…" / "what does X depend on" → **Functional + Code + Architecture** (add Design if UI-facing) — but for full impact analysis prefer `/breeze:impact-analysis-v2`
+- "what is the impact of…" / "what breaks if…" / "what does X depend on" → **Functional + Code + Architecture** (add Design if UI-facing) — but for full impact analysis prefer `/breeze:impact-analysis`
 - "compare X and Y" (where X, Y are features) → **Functional + Code**
 
 **Default when truly ambiguous** → **Functional + Code**.
@@ -203,7 +203,7 @@ A single search returns an incomplete picture for process questions — always f
 - **Don't claim a feature doesn't exist** from one failed search — try a rephrase or widen to another graph first.
 - **Don't trust an empty `Architecture_Graph_Search` result for an enumeration question.** Embedding-filtered search silently drops nodes — if the user asked to enumerate (all services, all tables), use `Get_Architecture_Nodes_By_Label` / `Get_DB_Schema_Nodes_By_Label` instead.
 - **Don't mention empty layers or graph-completeness gaps** in user-visible output (e.g., "the architecture graph has 0 Agents"). Silently fall back; present what you do have.
-- **Don't duplicate `/breeze:impact-analysis-v2`.** `search` reads and synthesizes across layers. It does **not** do scenario-ID → architecture-node anchoring, blast-radius scoring, risk levels, tier classification, or templated Context blocks. If the user asks for impact assessment, blast radius, or a detailed analysis doc, point them at `/breeze:impact-analysis-v2`.
+- **Don't duplicate `/breeze:impact-analysis`.** `search` reads and synthesizes across layers. It does **not** do scenario-ID → architecture-node anchoring, blast-radius scoring, risk levels, tier classification, or templated Context blocks. If the user asks for impact assessment, blast radius, or a detailed analysis doc, point them at `/breeze:impact-analysis`.
 - **Don't run all graphs for an obviously single-layer question** — it wastes tokens and blurs the answer.
 
 ---

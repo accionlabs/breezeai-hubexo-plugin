@@ -70,8 +70,7 @@ The linked `projectUuid` is saved to `.breeze.json` in the project root (gitigno
 | Skill | Command | Description |
 |---|---|---|
 | **Search** | `/breeze:search <query>` | Smart-search across functional, design, code, and architecture graphs — routes to one or many based on query intent. Default entry point for any question about the project. |
-| **Impact Analysis** | `/breeze:impact-analysis` | Original impact analysis. Cross-layer summary + optional detailed document with Mermaid diagrams. |
-| **Impact Analysis v2** | `/breeze:impact-analysis-v2 [--detailed] <prompt>` | Newer, more structured impact analysis. Same cross-layer scope, plus: legend on every detailed doc, marker tables for all four ontologies, structured Risk Taxonomy (Why / Worst case / Mitigation per risk), concrete QA Test Plan as a table, Implementation Options (A/B/C with pros/cons), Multi-Service Deploy Coordination, Open Questions, Out of Scope sections, Schema-Side Impact (Data Context block) with 🔴/🟡/🟢 verdict. Pass `--detailed` to skip the summary and emit the full document directly. |
+| **Impact Analysis** | `/breeze:impact-analysis [--detailed] <prompt>` | Structured cross-layer impact analysis. Summary + optional detailed document with Mermaid diagrams: legend on every detailed doc, marker tables for all four ontologies, structured Risk Taxonomy (Why / Worst case / Mitigation per risk), concrete QA Test Plan as a table, Implementation Options (A/B/C with pros/cons), Multi-Service Deploy Coordination, Open Questions, Out of Scope sections, Schema-Side Impact (Data Context block) with 🔴/🟡/🟢 verdict. Pass `--detailed` to skip the summary and emit the full document directly. |
 
 ### Spec generation
 
@@ -81,7 +80,7 @@ The linked `projectUuid` is saved to `.breeze.json` in the project root (gitigno
 
 ## Project resolution
 
-Every analysis skill (`search`, `impact-analysis`, `impact-analysis-v2`, `generate-spec`) resolves the active project for each invocation using the flow below. The full rule lives in `CLAUDE.md` at the plugin root — skills defer to it rather than duplicating logic.
+Every analysis skill (`search`, `impact-analysis`, `generate-spec`) resolves the active project for each invocation using the flow below. The full rule lives in `CLAUDE.md` at the plugin root — skills defer to it rather than duplicating logic.
 
 ### How a skill picks the project
 
@@ -120,7 +119,7 @@ First-time setup:
   /breeze:generate-spec                               # if the project already has a graph
 
 Adding a new requirement to an existing project:
-  /breeze:impact-analysis-v2                          # newer, structured output
+  /breeze:impact-analysis                             # structured cross-layer analysis
   /breeze:search <query>
 
 Switching projects mid-session:
@@ -192,5 +191,5 @@ For active development of the plugin itself:
 - `.breeze.json` holds only the linked `projectUuid` and the API key for non-MCP CLI consumers. It is gitignored by default. MCP authentication uses Keycloak SSO via Claude Code — no API key or secret needs to be pasted for MCP tools.
 - All skills except `/breeze:project` (in `setup`, `auth`, `list`, `create` modes) and the legacy `/breeze:setup-project` alias require a project to be resolvable (see Project resolution above). If a Breeze MCP tool call fails with an auth error, run `/breeze:project auth`.
 - The Keycloak token expires after roughly 7 days. Expect to re-authenticate periodically; the skills will tell you when.
-- The `--detailed` flag is supported only by `/breeze:impact-analysis-v2` today. It skips the summary and emits the full diagrammed document directly.
+- The `--detailed` flag is supported only by `/breeze:impact-analysis` today. It skips the summary and emits the full diagrammed document directly.
 - The **Design** skill requires a Figma MCP server to be configured separately.
