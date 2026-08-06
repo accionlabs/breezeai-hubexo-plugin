@@ -13,8 +13,8 @@
         "author": {
           "name": "Accion Breeze"
         },
-        "homepage": "https://github.com/accionlabs/breezeai-claude-plugin",
-        "repository": "https://github.com/accionlabs/breezeai-claude-plugin",
+        "homepage": "https://github.com/accionlabs/breezeai-hubexo-plugin",
+        "repository": "https://github.com/accionlabs/breezeai-hubexo-plugin",
         "keywords": ["breeze", "ontology", "functional-graph", "mcp", "design-analysis"]
       }
     ]
