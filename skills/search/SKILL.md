@@ -28,6 +28,13 @@ All tools below are read-only. Pass `projectUuid` (or `project_uuid` / `uuid`, p
 ### Code graph
 - `Call_List_Repositories_` — list every indexed repository in the project (name, id, file/class/function counts, language, repo URL, commit, branch). Use first for "which codebases are indexed" questions, and to enable per-repo scoping on subsequent `Code_Graph_Search` calls.
 - `Code_Graph_Search` — semantic search across File / Function / Class. Supports `repository_name=` to scope a search to one repo when the question clearly maps to a single subsystem (e.g., a frontend-only change → the `frontendweb_*` repo). When the touched code spans multiple repos, anchor each hit back to its parent repo from the inventory.
+  **Blind spots — it cannot answer completeness questions.** It never surfaces **private or
+  unreferenced members**, so "list every method in X" via this tool silently under-returns — resolve
+  the owning file and call `Get_Code_File_Details` instead, which returns the full structure. A File
+  hit carries no nested members, it cannot count or enumerate, and responses are LARGE: request the
+  smallest `limit` that answers the question. Partial classes (a `.cs` plus its generated
+  `.designer.cs`) arrive as separate hits for one class — treat them as one and prefer the
+  non-generated file.
 - `Get_Code_File_Details` — full hierarchical structure of a single file (classes, methods, decorators, statements).
 
 ### Design graph
@@ -37,8 +44,37 @@ All tools below are read-only. Pass `projectUuid` (or `project_uuid` / `uuid`, p
 
 ### Architecture + DB-schema graph
 - `Architecture_Graph_Search` — semantic search across architecture-layer nodes (UserExperience, ApiGateway, ObservabilityMonitoring, Agents, Services, EventQueue, DataLake, Infrastructure) **AND** DDL nodes attached to each DataLake (DDLTable, DDLColumn, DDLConstraint, DDLIndex, DDLView, DDLSequence, DDLProcedure). Filter via `include_labels=[...]` and tune `threshold` (default ~0.4). **Embedding-filtered — silently drops nodes whose name/description doesn't match the query.** For *enumeration* questions ("list every service", "every table in DataLake X"), fall back to the by-label tools below — those don't filter.
+  **An empty architecture layer is NORMAL and is not evidence the project lacks architecture data.**
+  On many projects all 8 layers are empty or near-empty while the data layer hanging off `DataLake`
+  holds the full schema. Probe once with a by-label call at `limit=1` before investing further
+  semantic calls in a layer — an empty layer is a project-onboarding fact, not a phrasing problem.
+  `DDLColumn`, `DDLConstraint`, `DDLIndex` and `DDLSequence` have **no embedding** and can never be
+  returned here even though the endpoint accepts those label names — it silently returns nothing.
+  A `DDLTable` hit returns metadata only (schema, name, tableType, columnCount, hasPrimaryKey), not
+  its columns; a `DDLView` returns its SQL with an empty columns array; a `DDLProcedure` returns its
+  body and typed parameter list.
 - `Get_Architecture_Nodes_By_Label` — enumerate every architecture node in one layer (no semantic filter, no silent drops). Use for "list all services / queues / data stores".
 - `Get_DB_Schema_Nodes_By_Label` — list DDL entities under one DataLake by label (`table`, `column`, `constraint`, `index`, `view`, `sequence`, `procedure`). Supports pagination, sort, equality/regex filters (e.g. `{"tableId": {"$eq": "<uuid>"}}`), parent/child tree walks. Use for "all tables in DataLake X", "FKs referencing table Y", "columns of table Z".
+
+  **Always set `limit`.** The server default is 100 with no field projection, so a `procedure` or
+  `view` page arrives with the stored body/definition attached. Use 5–10 for `procedure`/`view`,
+  25–50 for `table`, 100 is fine for `column`/`constraint`/`index`/`sequence`.
+
+  **⚠ `label="procedure"` also returns triggers and functions.** Discriminate on the
+  `procedureType` field (`procedure` | `trigger` | `function`) before counting or reporting
+  "stored procedures". In PostgreSQL projects most routines are `function`s.
+
+  **⚠ `label="view"` can return a false zero.** Materialized views are ingested under
+  `label="table"` with `tableType: "materialized_view"`. Enumerate `table` and inspect `tableType`
+  rather than trusting an empty `view` result.
+
+  **⚠ `columnCount` and `hasPrimaryKey` are frequently unpopulated** — observed `columnCount: 0` on
+  22 of 37 tables and `hasPrimaryKey: false` on all 37, including tables with documented primary
+  keys. Do not quote either as fact; fetch `label="column"` to count columns.
+
+  **Only ingested schemas are present.** Verify which schemas exist rather than assuming the whole
+  database is modelled — non-`public` schemas (reporting, FDW/foreign-table schemas) are often
+  described in the DataLake node's prose but have zero nodes.
 
 ### Label routing for `Architecture_Graph_Search`
 
@@ -68,6 +104,32 @@ Pick `include_labels` by query intent — narrow when you can, omit when truly a
 When a question demands completeness ("are these ALL the services / tables?"), don't rely on this tool — use `Get_Architecture_Nodes_By_Label` or `Get_DB_Schema_Nodes_By_Label`.
 
 ---
+
+## Claiming Something Is Absent
+
+A search that returns nothing licenses **"I did not find X with the searches I ran"** — never
+**"X does not exist"**. Absence is a much stronger claim and needs stronger evidence:
+
+- **Functional:** only an exhaustive `Get_all_outcomes_for_a_persona_id` (after `Get_all_personas`)
+  supports "this persona has no flow for X".
+- **Code:** `Code_Graph_Search` is embedding-ranked and returns a sample, so an empty or thin result
+  is never proof. Re-query with the identifier spelled exactly as it appears in source, try
+  snake_case/kebab-case and British/American spelling variants, and resolve candidate files with
+  `Get_Code_File_Details` before concluding anything is missing. A search that found *one* mechanism
+  is **not** evidence that no other mechanism exists — if you are about to write "X is not triggered
+  by Y", search for the trigger from the other end before saying it.
+- **Schema:** a by-label enumeration returning `total: 0` (never a semantic result), and only after
+  confirming the layer is onboarded at all — cross-check a populated label so you can distinguish
+  "ingested and empty" from "never ingested".
+- **Contradiction claims are absence claims.** "The code does X but the graph omits it" asserts the
+  graph lacks something, and needs the same evidence. Check the owning Outcome's own description
+  before writing it — capabilities are routinely named at Outcome level in words that appear
+  nowhere in the scenarios beneath.
+
+**Control queries.** To establish what the graph *can* contain, run a probe you know the answer to —
+e.g. searching for a file you are certain exists. If it does not come back, the gap is in ingestion
+or scoping, not in the thing you were looking for. State that caveat instead of silently
+under-reporting.
 
 ## Phase 1 — Classify Query Scope
 
