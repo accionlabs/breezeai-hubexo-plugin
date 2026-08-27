@@ -29,7 +29,13 @@ If Step 1 didn't resolve a project, read `.breeze.json` from the repo root:
 - **Has `projectUuid`** → use it.
 - **File missing OR `projectUuid` absent** → call `Call_List_Project_`, present the accessible projects numbered with names + UUIDs, and ask the user to pick one. Use that UUID for this invocation only — do NOT mutate `.breeze.json`. To persist the choice, the user should follow up with `/breeze:project use <name|uuid>`.
 
-### Step 3: Announce the active project
+### Step 3: Load project context (required before any graph call)
+
+Immediately after resolving `projectUuid`, call `Call_Get_Project_Details_` and read `metadata.description` and `metadata.projectContext` into the active context. Do this **before** making any graph search or graph write tool calls (`Functional_Graph_Search`, `Code_Graph_Search`, `Design_Graph_Search`, `Architecture_Graph_Search`, `Call_Create_Functional_Node_`, `Call_Update_Functional_Node_`, etc.).
+
+The `projectContext` field contains project-specific terminology rules, architectural conventions, and known caveats that must be respected in all responses and graph operations for this project. Treat it as authoritative — if it contradicts a general default, the `projectContext` wins.
+
+### Step 4: Announce the active project
 
 Begin the response with one line so the user can verify scope at a glance:
 
