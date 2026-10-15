@@ -30,12 +30,12 @@ All tools below are read-only. Pass `projectUuid` (or `project_uuid` / `uuid`, p
 - `Code_Graph_Search` — semantic search across File / Function / Class. Supports `repository_name=` to scope a search to one repo when the question clearly maps to a single subsystem (e.g., a frontend-only change → the `frontendweb_*` repo). When the touched code spans multiple repos, anchor each hit back to its parent repo from the inventory.
   **Blind spots — it cannot answer completeness questions.** It never surfaces **private or
   unreferenced members**, so "list every method in X" via this tool silently under-returns — use
-  `Get_Code_Nodes_By_Label` instead, which returns the full structure. A File
+  `Get_Code_Nodes_By_Label` instead (`children=true` for the full structure). A File
   hit carries no nested members, it cannot count or enumerate, and responses are LARGE: request the
   smallest `limit` that answers the question. Partial classes (a `.cs` plus its generated
   `.designer.cs`) arrive as separate hits for one class — treat them as one and prefer the
   non-generated file.
-- `Get_Code_Nodes_By_Label` — fetch code nodes by label (`File` / `Function` / `Class` / `Statement`), filtered on the node's own fields (`path`, `name`, `id`, …) with `children=true` to attach the full subtree. For a single file's full structure (classes → methods → statements, functions → statements, file-level statements) call `Get_Code_Nodes_By_Label(label="File", filters={"id": <fileId>} OR {"path": <path>, "codeOntologyId": <id>}, children=true)`. Always filter on a unique key (`id`, or `path` + `codeOntologyId`) — `data` is an array and a bare `path` can match the same file across repos. Scope to one repo with `codeOntologyId` (the repo's `_id` from `Call_List_Repositories_`); `repositoryName` is **rejected** as a filter. Use `children=false` for lean File lists.
+- `Get_Code_Nodes_By_Label` — fetch code nodes by label (`File` / `Function` / `Class` / `Statement`), filtered on the node's own fields (`path`, `name`, `id`, …) with `children=true` to attach the full subtree. For a single file's full structure (classes → methods → statements, functions → statements, file-level statements) call `Get_Code_Nodes_By_Label(label="File", filters={"id": <fileId>} OR {"path": <path>, "codeOntologyId": <id>}, children=true)`. Always filter on a unique key (`id`, or `path` + `codeOntologyId`) — `data` is an array and a bare `path` can match the same file across repos. Scope to one repo with `codeOntologyId` (the repo's `_id` from `Call_List_Repositories_`); `repositoryName` is **rejected** as a filter. Always pass `children` explicitly: `true` to read bodies, `false` for lean File lists — do not rely on the server default.
 
 ### Design graph
 - `Design_Graph_Search` — semantic search across design nodes (journeys, flows, pages, components).
@@ -141,7 +141,7 @@ Stop at the first match:
 
 | Query shape | Route to |
 |---|---|
-| Pure code lookup — "where is X implemented", "find function/class/file Y", "show me the route handler for Z" | `Code_Graph_Search` → then `Get_Code_Nodes_By_Label` on top hits (`label="File"` by `id` or `path` + `codeOntologyId`, or `label="Function"`/`"Class"` by `name` + `path`). If the query names or implies a single repo, list repos via `Call_List_Repositories_` first and scope the search via `repository_name=`. |
+| Pure code lookup — "where is X implemented", "find function/class/file Y", "show me the route handler for Z" | `Code_Graph_Search` → then `Get_Code_Nodes_By_Label(..., children=true)` on top hits (`label="File"` by `id` or `path` + `codeOntologyId`, or `label="Function"`/`"Class"` by `name` + `path`). If the query names or implies a single repo, list repos via `Call_List_Repositories_` first and scope the search via `repository_name=`. |
 | Repo inventory — "which codebases", "list the repos", "what languages does this project use", "what's the repo for X" | `Call_List_Repositories_` |
 | Pure UI — "what page shows X", "which component", "what does the settings screen look like" | `Design_Graph_Search` → optionally `Get_Design_Nodes_by_Ids` for detail |
 | Personas / roles only — "who manages X", "what roles exist" | `Get_all_personas` → drill down (see Phase 3) |
