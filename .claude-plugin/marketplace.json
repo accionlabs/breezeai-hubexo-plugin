@@ -9,7 +9,7 @@
       "name": "breeze",
       "source": "./",
       "description": "Breeze AI — functional, design, code, and architecture graph skills plus requirement tracing via MCP",
-      "version": "0.9.3",
+      "version": "0.9.4",
       "author": {
         "name": "Accion Breeze"
       },
