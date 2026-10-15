@@ -29,13 +29,13 @@ All tools below are read-only. Pass `projectUuid` (or `project_uuid` / `uuid`, p
 - `Call_List_Repositories_` — list every indexed repository in the project (name, id, file/class/function counts, language, repo URL, commit, branch). Use first for "which codebases are indexed" questions, and to enable per-repo scoping on subsequent `Code_Graph_Search` calls.
 - `Code_Graph_Search` — semantic search across File / Function / Class. Supports `repository_name=` to scope a search to one repo when the question clearly maps to a single subsystem (e.g., a frontend-only change → the `frontendweb_*` repo). When the touched code spans multiple repos, anchor each hit back to its parent repo from the inventory.
   **Blind spots — it cannot answer completeness questions.** It never surfaces **private or
-  unreferenced members**, so "list every method in X" via this tool silently under-returns — resolve
-  the owning file and call `Get_Code_File_Details` instead, which returns the full structure. A File
+  unreferenced members**, so "list every method in X" via this tool silently under-returns — use
+  `Get_Code_Nodes_By_Label` instead, which returns the full structure. A File
   hit carries no nested members, it cannot count or enumerate, and responses are LARGE: request the
   smallest `limit` that answers the question. Partial classes (a `.cs` plus its generated
   `.designer.cs`) arrive as separate hits for one class — treat them as one and prefer the
   non-generated file.
-- `Get_Code_File_Details` — full hierarchical structure of a single file (classes, methods, decorators, statements).
+- `Get_Code_Nodes_By_Label` — fetch code nodes by label (`File` / `Function` / `Class` / `Statement`), filtered on the node's own fields (`path`, `name`, `id`, …) with `children=true` to attach the full subtree. For a single file's full structure (classes → methods → statements, functions → statements, file-level statements) call `Get_Code_Nodes_By_Label(label="File", filters={"id": <fileId>} OR {"path": <path>, "codeOntologyId": <id>}, children=true)`. Always filter on a unique key (`id`, or `path` + `codeOntologyId`) — `data` is an array and a bare `path` can match the same file across repos. Scope to one repo with `codeOntologyId` (the repo's `_id` from `Call_List_Repositories_`); `repositoryName` is **rejected** as a filter. Use `children=false` for lean File lists.
 
 ### Design graph
 - `Design_Graph_Search` — semantic search across design nodes (journeys, flows, pages, components).
@@ -115,7 +115,7 @@ A search that returns nothing licenses **"I did not find X with the searches I r
 - **Code:** `Code_Graph_Search` is embedding-ranked and returns a sample, so an empty or thin result
   is never proof. Re-query with the identifier spelled exactly as it appears in source, try
   snake_case/kebab-case and British/American spelling variants, and resolve candidate files with
-  `Get_Code_File_Details` before concluding anything is missing. A search that found *one* mechanism
+  `Get_Code_Nodes_By_Label` before concluding anything is missing. A search that found *one* mechanism
   is **not** evidence that no other mechanism exists — if you are about to write "X is not triggered
   by Y", search for the trigger from the other end before saying it.
 - **Schema:** a by-label enumeration returning `total: 0` (never a semantic result), and only after
@@ -141,7 +141,7 @@ Stop at the first match:
 
 | Query shape | Route to |
 |---|---|
-| Pure code lookup — "where is X implemented", "find function/class/file Y", "show me the route handler for Z" | `Code_Graph_Search` → then `Get_Code_File_Details` on top hits. If the query names or implies a single repo, list repos via `Call_List_Repositories_` first and scope the search via `repository_name=`. |
+| Pure code lookup — "where is X implemented", "find function/class/file Y", "show me the route handler for Z" | `Code_Graph_Search` → then `Get_Code_Nodes_By_Label` on top hits (`label="File"` by `id` or `path` + `codeOntologyId`, or `label="Function"`/`"Class"` by `name` + `path`). If the query names or implies a single repo, list repos via `Call_List_Repositories_` first and scope the search via `repository_name=`. |
 | Repo inventory — "which codebases", "list the repos", "what languages does this project use", "what's the repo for X" | `Call_List_Repositories_` |
 | Pure UI — "what page shows X", "which component", "what does the settings screen look like" | `Design_Graph_Search` → optionally `Get_Design_Nodes_by_Ids` for detail |
 | Personas / roles only — "who manages X", "what roles exist" | `Get_all_personas` → drill down (see Phase 3) |
@@ -204,8 +204,8 @@ For "how does X work" questions, drill all the way to Steps/Actions. For "who do
 
 ### Code drill-down
 - **Always anchor hits to their parent repo** from the `Call_List_Repositories_` inventory. When the touched code spans multiple repos, prefix file paths with the repo name (e.g., `frontendweb_react_tnlm: src/utils/posthog.ts`) so cross-repo coordination is visible at a glance.
-- **Top hits are Files** → call `Get_Code_File_Details` on each to see classes, methods, decorators, statements.
-- **Top hits are Functions or Classes** → their source and call chain are already in the search payload; only fetch the parent file if you need surrounding context.
+- **Top hits are Files** → call `Get_Code_Nodes_By_Label(label="File", filters={"id": <fileId>}, children=true)` on each to see classes, methods, decorators, statements.
+- **Top hits are Functions or Classes** → their source and call chain are already in the search payload. For the full node (statements, decorators) call `Get_Code_Nodes_By_Label(label="Function" | "Class", filters={"name": <name>, "path": <hit.path>}, children=true)`; for surrounding context fetch the whole file straight from the hit with `Get_Code_Nodes_By_Label(label="File", filters={"path": <hit.path>, "codeOntologyId": <id>}, children=true)` — every hit carries its source `path`.
 
 ### Design drill-down
 - **Top hits are design nodes** → if the search payload is thin, call `Get_Design_Nodes_by_Ids` on the top IDs for full detail, or `Get_all_Design_By_Label` to widen within a label type.
