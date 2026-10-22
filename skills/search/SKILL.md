@@ -54,7 +54,7 @@ All tools below are read-only. Pass `projectUuid` (or `project_uuid` / `uuid`, p
   its columns; a `DDLView` returns its SQL with an empty columns array; a `DDLProcedure` returns its
   body and typed parameter list.
 - `Get_Architecture_Nodes_By_Label` — enumerate every architecture node in one layer (no semantic filter, no silent drops). Use for "list all services / queues / data stores".
-- `Get_DB_Schema_Nodes_By_Label` — list DDL entities under one DataLake by label (`table`, `column`, `constraint`, `index`, `view`, `sequence`, `procedure`). Supports pagination, sort, equality/regex filters (e.g. `{"tableId": {"$eq": "<uuid>"}}`), parent/child tree walks. Use for "all tables in DataLake X", "FKs referencing table Y", "columns of table Z".
+- `Get_DataLake_Schema_Nodes` — list schema nodes under one DataLake by graph label: SQL `DDLTable`, `DDLView`, `DDLProcedure`, `DDLSequence`, `DDLColumn`, `DDLConstraint`, `DDLIndex`; Elasticsearch `ESIndex`, `ESField`, `ESAlias`; NoSQL `NoSQLCollection`, `NoSQLField`, `NoSQLIndex` (`parent_id` narrows to one table, ES index or collection). Supports pagination, sort, equality/regex filters (e.g. `{"tableId": {"$eq": "<uuid>"}}`), parent/child tree walks. Use for "all tables in DataLake X", "FKs referencing table Y", "columns of table Z".
 
   **Always set `limit`.** The server default is 100 with no field projection, so a `procedure` or
   `view` page arrives with the stored body/definition attached. Use 5–10 for `procedure`/`view`,
@@ -101,7 +101,7 @@ Pick `include_labels` by query intent — narrow when you can, omit when truly a
 | "what stores AND schema back X" | `["DataLake","DDLTable","DDLView"]` |
 | Truly ambiguous one-word queries | omit `include_labels` |
 
-When a question demands completeness ("are these ALL the services / tables?"), don't rely on this tool — use `Get_Architecture_Nodes_By_Label` or `Get_DB_Schema_Nodes_By_Label`.
+When a question demands completeness ("are these ALL the services / tables?"), don't rely on this tool — use `Get_Architecture_Nodes_By_Label` or `Get_DataLake_Schema_Nodes`.
 
 ---
 
@@ -148,7 +148,7 @@ Stop at the first match:
 | Targeted deployment question — "which service handles X", "what queue carries Y", "what data store holds Z" | `Architecture_Graph_Search` with matching `include_labels` (see routing table above) |
 | Enumerate one architecture layer — "list every service / queue / data store / topic" | `Get_Architecture_Nodes_By_Label` |
 | Targeted DDL question — "find tables for X", "columns named Y", "FKs to Z", "views including W" | `Architecture_Graph_Search` with DDL `include_labels` |
-| Enumerate schema under one DataLake — "all tables in DataLake X", "every view in Y" | `Get_DB_Schema_Nodes_By_Label` (find the DataLake's id first via `Architecture_Graph_Search` or `Get_Architecture_Nodes_By_Label`) |
+| Enumerate schema under one DataLake — "all tables in DataLake X", "every view in Y" | `Get_DataLake_Schema_Nodes` (find the DataLake's id first via `Architecture_Graph_Search` or `Get_Architecture_Nodes_By_Label`) |
 
 ### 1b. Multi-graph triggers
 
@@ -212,8 +212,8 @@ For "how does X work" questions, drill all the way to Steps/Actions. For "who do
 
 ### Architecture + DDL drill-down
 - **Top hits are architecture nodes** → already self-contained (name, description, technologies, pattern, regions); use directly in synthesis.
-- **Top hits are DDL nodes (DDLTable / DDLColumn / DDLView / DDLProcedure …)** → the `ddlText` (for tables) or `definition` (for views/procs) is typically in the search payload. For a complete schema picture under one DataLake — every column of a table, every FK pointing at it, every view that references it — call `Get_DB_Schema_Nodes_By_Label` with the matching `data_lake_id` and the appropriate label + `filters`.
-- **Enumeration follow-up** — if the semantic search returned an incomplete set and the question demands completeness ("are these ALL the tables?"), fall back to `Get_Architecture_Nodes_By_Label` (one architecture layer) or `Get_DB_Schema_Nodes_By_Label` (schema-side, one DataLake).
+- **Top hits are DDL nodes (DDLTable / DDLColumn / DDLView / DDLProcedure …)** → the `ddlText` (for tables) or `definition` (for views/procs) is typically in the search payload. For a complete schema picture under one DataLake — every column of a table, every FK pointing at it, every view that references it — call `Get_DataLake_Schema_Nodes` with the matching `data_lake_id` and the appropriate label + `filters`.
+- **Enumeration follow-up** — if the semantic search returned an incomplete set and the question demands completeness ("are these ALL the tables?"), fall back to `Get_Architecture_Nodes_By_Label` (one architecture layer) or `Get_DataLake_Schema_Nodes` (schema-side, one DataLake).
 
 ### Cross-Persona Drill-Down
 
@@ -263,7 +263,7 @@ A single search returns an incomplete picture for process questions — always f
 
 - **Don't present raw search results as the final answer.** Always drill down and synthesize.
 - **Don't claim a feature doesn't exist** from one failed search — try a rephrase or widen to another graph first.
-- **Don't trust an empty `Architecture_Graph_Search` result for an enumeration question.** Embedding-filtered search silently drops nodes — if the user asked to enumerate (all services, all tables), use `Get_Architecture_Nodes_By_Label` / `Get_DB_Schema_Nodes_By_Label` instead.
+- **Don't trust an empty `Architecture_Graph_Search` result for an enumeration question.** Embedding-filtered search silently drops nodes — if the user asked to enumerate (all services, all tables), use `Get_Architecture_Nodes_By_Label` / `Get_DataLake_Schema_Nodes` instead.
 - **Don't mention empty layers or graph-completeness gaps** in user-visible output (e.g., "the architecture graph has 0 Agents"). Silently fall back; present what you do have.
 - **Don't duplicate `/breeze:impact-analysis`.** `search` reads and synthesizes across layers. It does **not** do scenario-ID → architecture-node anchoring, blast-radius scoring, risk levels, tier classification, or templated Context blocks. If the user asks for impact assessment, blast radius, or a detailed analysis doc, point them at `/breeze:impact-analysis`.
 - **Don't run all graphs for an obviously single-layer question** — it wastes tokens and blurs the answer.

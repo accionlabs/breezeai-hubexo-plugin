@@ -178,7 +178,7 @@ parallel:
 
 3. **DataLake-wide bulk fetch (last resort, amortized per DataLake).** Only when ≥2 focus tables share a parent DataLake AND structured column nodes are essential:
    ```
-   Get_DB_Schema_Nodes_By_Label(data_lake_id, label="column")  ← one call per DataLake
+   Get_DataLake_Schema_Nodes(data_lake_id, label="DDLColumn")  ← one call per DataLake
    → cache result, client-side filter by tableId for each focus table
    ```
    One expensive call (~thousands of nodes) reused across all focus tables in that DataLake.
@@ -189,9 +189,9 @@ parallel:
 
 **Action per affected DataLake (parallel, cached per DataLake):**
 ```
-Get_DB_Schema_Nodes_By_Label(data_lake_id, label="constraint")  → filter incoming FKs by referenced table
-Get_DB_Schema_Nodes_By_Label(data_lake_id, label="view")        → grep definition for table name (word-boundary)
-Get_DB_Schema_Nodes_By_Label(data_lake_id, label="procedure")   → grep body for table name (word-boundary)
+Get_DataLake_Schema_Nodes(data_lake_id, label="DDLConstraint")  → filter incoming FKs by referenced table
+Get_DataLake_Schema_Nodes(data_lake_id, label="DDLView")        → grep definition for table name (word-boundary)
+Get_DataLake_Schema_Nodes(data_lake_id, label="DDLProcedure")   → grep body for table name (word-boundary)
 ```
 
 ### Classify each touched DataLake into one of three tiers
